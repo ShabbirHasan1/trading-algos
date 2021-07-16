@@ -1,3 +1,9 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import sys
+
+import utils as utils
 from tradingAlgo import tradingAlgo
 
 class dualMovingAverageCrossover(tradingAlgo):
@@ -59,3 +65,40 @@ class dualMovingAverageCrossover(tradingAlgo):
             return 1
         else:
             return 0
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) != 3:
+        print("Usage:")
+        print("    python3 dualMovingAverageCrossover.py short_lookback long_lookback")
+        print("    Ex: python3 dualMovingAverageCrossover.py 20 50")
+    
+    short_lookback = int(sys.argv[1])
+    long_lookback = int(sys.argv[2])
+    
+    dma_crossover = dualMovingAverageCrossover(short_lookback, long_lookback)
+
+    # BTC backtest
+    df_btc = utils.read_bars("data/BTCUSD_daily_bars.csv")
+    result_btc = utils.run_backtest(df_btc, dma_crossover)
+    result_btc['Percent Change'] = result_btc['Portfolio Value'].apply(lambda x: 100 * x / result_btc['Portfolio Value'].iloc[0])
+    print("BTC backtest complete")
+
+    # ETH backtest
+    df_eth = utils.read_bars("data/ETHUSD_daily_bars.csv")
+    result_eth = utils.run_backtest(df_eth, dma_crossover)
+    result_eth['Percent Change'] = result_eth['Portfolio Value'].apply(lambda x: 100 * x / result_eth['Portfolio Value'].iloc[0])
+    print("ETH backtest complete")
+
+    # Plot percent change
+    fig, ax = plt.subplots(figsize=(15, 10))
+    ax.plot(result_btc['Date'], result_btc['Percent Change'], label="BTC")
+    ax.plot(result_eth['Date'], result_eth['Percent Change'], label="ETH")
+    ax.legend(fontsize='large')
+    ax.set_xlabel("Date", fontsize='large')
+    ax.set_ylabel("Percentage Change (%)", fontsize='large')
+    ax.set_title("Dual Moving Average Crossover (20d, 50d) BTC vs. ETH", fontsize='large')
+    plot_title = "dualMovingAverageCrossover({}, {})_BTC_ETH.png".format(short_lookback, long_lookback)
+    fig.savefig(plot_title)
+    print("Output plot saved to {}".format(plot_title))
